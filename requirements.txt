@@ -3,3 +3,4 @@ line-bot-sdk
 uvicorn
 fastapi
 google-generativeai
+gradio
