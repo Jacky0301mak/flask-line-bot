@@ -1016,7 +1016,7 @@ X: 以上沒有符合我的症狀種類
         'X': '退出'}
 
     def process_symptom_input(symptom_input):
-    symptom_input = symptom_input.upper()
+     symptom_input = symptom_input.upper()
     if symptom_input in ["A", "B", "C", "D", "E", "X"]:
         return f"您選擇了: {symptom_input}"
     else:
