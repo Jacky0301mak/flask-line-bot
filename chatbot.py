@@ -1015,8 +1015,8 @@ X: 以上沒有符合我的症狀種類
         'E': '身心與內分泌問題',
         'X': '退出'}
 symptom_input = input("請輸入(A/B/C/D/E/X): ").upper()
-    def process_symptom_input(symptom_input):
-        symptom_input = symptom_input.upper()
+def process_symptom_input(symptom_input):
+    symptom_input = symptom_input.upper()
     if symptom_input in ["A", "B", "C", "D", "E", "X"]:
         return f"您選擇了: {symptom_input}"
     else:
