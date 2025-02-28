@@ -17,7 +17,20 @@ from linebot import LineBotApi
 
 # 載入 .env 變數
 load_dotenv()
+@app.route(url)
+def image(url):
+  response = requests.get(url) # 下載圖片
 
+  if response.status_code == 200: # 檢查是否成功下載
+    img = Image.open(BytesIO(response.content)) # 讀取圖片內容
+
+    plt.imshow(img) # 使用 matplotlib 顯示圖片
+    plt.axis('off')  # 不顯示坐標軸
+    plt.show()
+
+    img.save('downloaded_image.jpg')     # 保存圖片
+  else:
+    print('Failed to download image')
 
 # 設定 Google Gemini AI API 金鑰
 genai.configure(api_key=os.environ["GOOGLE_API_KEY"])
