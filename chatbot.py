@@ -1,9 +1,40 @@
-import app.py
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, Request, Header, BackgroundTasks, HTTPException
 import requests
 from PIL import Image
 from io import BytesIO
 import matplotlib.pyplot as plt
+from linebot import LineBotApi, WebhookHandler
+from linebot.exceptions import InvalidSignatureError
+from linebot.models import MessageEvent, TextMessage, TextSendMessage
 
+app = FastAPI()
+
+# 設定 Google Gemini API 金鑰
+genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+
+# 設定 Gemini 文字生成參數
+generation_config = genai.types.GenerationConfig(
+    max_output_tokens=2048, temperature=0.2, top_p=0.5, top_k=16
+    )
+model = genai.GenerativeModel(
+    model_name="gemini-2.0-flash",
+    generation_config=generation_config,
+    system_instruction=(
+    "你是一個專業的醫療輔助機器人，只能回答與醫療相關的問題。"
+    "請根據你的知識，提供準確、簡潔、符合醫療建議的回答。"
+    "如果問題超出你的專業範圍，請回答「抱歉，我無法回答這個問題，請諮詢專業醫生。」"
+    )
+)
+
+
+	
+# 設定 Line Bot API 金鑰
+line_bot_api = LineBotApi(os.environ["CHANNEL_ACCESS_TOKEN"])
+line_handler = WebhookHandler(os.environ["CHANNEL_SECRET"])
+
+# 設定是否與使用者交談
+working_status = os.getenv("DEFALUT_TALKING", default="true").lower() == "true"	
 def image(url):
   response = requests.get(url) # 下載圖片
 
@@ -993,11 +1024,10 @@ import google.generativeai as genai
 import json, os
 #from google.colab import userdata 
 
+@app.get("/")
 def main():
+    return {"您好！我將為您推薦符合您症狀的藥用植物🌿"}
 # 讓使用者輸入選擇
-    print("您好！我將為您推薦符合您症狀的藥用植物🌿")
-    print(
-"""
 請選擇以下最符合您症狀的種類(A~E):
 A: 呼吸系統與感冒問題
 B: 消化與代謝問題
@@ -1005,7 +1035,7 @@ C: 皮膚與過敏問題
 D: 循環與泌尿系統問題
 E: 身心與內分泌問題
 X: 以上沒有符合我的症狀種類
-""")
+"""}
 #有效的輸入(A/B/C/D/E/X)
     valid_choices = {
         'A': '呼吸系統與感冒相關',
@@ -1014,27 +1044,52 @@ X: 以上沒有符合我的症狀種類
         'D': '循環與泌尿系統',
         'E': '身心與內分泌問題',
         'X': '退出'}
-symptom_input = input("請輸入(A/B/C/D/E/X): ").upper()
-def process_symptom_input(symptom_input):
-    symptom_input = symptom_input.upper()
-    if symptom_input in ["A", "B", "C", "D", "E", "X"]:
-        return f"您選擇了: {symptom_input}"
-    else:
-        return "無效輸入，請輸入 A/B/C/D/E/X"
+user_status = {}
 
-    # 如果使用者選擇 X，則退出
-    if Symptom_input == 'X':
-        if type_input in ['沒有', '無']:
-          detailed_input = input("請詳細描述您的症狀: ")
+@line_handler.add(MessageEvent, message=TextMessage)
+def handle_message(event):
+    user_id = event.source.user_id
+    user_input = event.message.text.strip().upper()
+
+    # 初始詢問
+    if user_id not in user_status:
+        message = """您好！
+我將推薦符合您症狀的藥用植物🌿
+請選擇以下最符合您症狀的種類(A~E):
+A: 呼吸系統與感冒問題
+B: 消化與代謝問題
+C: 皮膚與過敏問題
+D: 循環與泌尿系統問題
+E: 身心與內分泌問題
+X: 以上沒有符合我的症狀種類"""
+        
+        user_status[user_id] = "waiting_for_category"
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(text=message))
+        return
+
+    # 讀取使用者的分類選擇
+    if user_status[user_id] == "waiting_for_category":
+        if user_input == "X":
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text="請描述您的症狀，我將為您推薦藥用植物。"))
+            user_status[user_id] = "waiting_for_details"
+        elif user_input in ["A", "B", "C", "D", "E"]:
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text="請輸入您的具體症狀，例如：喉嚨痛、腸胃不適等。"))
+            user_status[user_id] = "waiting_for_symptom"
+        else:
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text="請輸入 A, B, C, D, E 或 X。"))
+        return
+
+    # 讓使用者輸入詳細症狀
+    if user_status[user_id] == "waiting_for_details" or user_status[user_id] == "waiting_for_symptom":
         try:
-          ai_response = model.generate_content(detailed_input)
-          response_text = ai_response.text if ai_response.text else "抱歉，我無法理解你的問題，請換個方式問問看～"
-          print('\n'+response_text)
+            ai_response = model.generate_content(user_input)
+            response_text = ai_response.text if ai_response.text else "抱歉，我無法理解你的問題，請換個方式問問看～"
         except:
-          response_text = "Gemini 執行出錯，請稍後再試！"
-          print(response_text)
-        return  # **停止函數執行**
-
+            response_text = "Gemini 執行出錯，請稍後再試！"
+        
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(text=response_text))
+        del user_status[user_id]  # 清除狀態
+        return
     # 取得對應的分類名稱
     category = valid_choices[Symptom_input]
 
@@ -1091,7 +1146,7 @@ def process_symptom_input(symptom_input):
     return
 
 if __name__ == "__main__":
-  main()
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
 
   
 
