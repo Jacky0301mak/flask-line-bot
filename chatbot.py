@@ -1015,10 +1015,12 @@ X: 以上沒有符合我的症狀種類
         'E': '身心與內分泌問題',
         'X': '退出'}
 
-    Symptom_input = input("請輸入(A/B/C/D/E/X): ").upper()
-    while Symptom_input not in valid_choices:
-        print("輸入錯誤，請重新輸入 A, B, C, D, E 或 X")
-        Symptom_input = input("請輸入您的選擇 (A/B/C/D/E/X): ").upper()
+    def process_symptom_input(symptom_input):
+    symptom_input = symptom_input.upper()
+    if symptom_input in ["A", "B", "C", "D", "E", "X"]:
+        return f"您選擇了: {symptom_input}"
+    else:
+        return "無效輸入，請輸入 A/B/C/D/E/X"
 
     # 如果使用者選擇 X，則退出
     if Symptom_input == 'X':
