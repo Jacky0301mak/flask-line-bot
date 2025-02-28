@@ -18,20 +18,31 @@ from linebot import LineBotApi
 # 載入 .env 變數
 load_dotenv()
 
-def image(url):
-  response = requests.get(url) # 下載圖片
+@app.get("/image")
+def image(url: str):
+    try:
+        response = requests.get(url)  # 下載圖片
+        if response.status_code == 200:  # 檢查是否成功下載
+            img = Image.open(BytesIO(response.content))  # 讀取圖片內容
+            plt.imshow(img)  # 使用 matplotlib 顯示圖片
+            plt.axis('off')  # 不顯示坐標軸
+            plt.show()
+            img.save('downloaded_image.jpg')  # 保存圖片
+            return {"message": "圖片已下載並顯示"}
+        else:
+            raise HTTPException(status_code=400, detail="Failed to download image")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"錯誤: {str(e)}")
 
-  if response.status_code == 200: # 檢查是否成功下載
-    img = Image.open(BytesIO(response.content)) # 讀取圖片內容
-
-    plt.imshow(img) # 使用 matplotlib 顯示圖片
-    plt.axis('off')  # 不顯示坐標軸
-    plt.show()
-
-    img.save('downloaded_image.jpg')     # 保存圖片
-  else:
-    print('Failed to download image')
-
+@app.post("/ai-response")
+async def ai_response(detailed_input: str):
+    try:
+        ai_response = model.generate_content(detailed_input)
+        response_text = ai_response.text if ai_response.text else "抱歉，我無法理解你的問題，請換個方式問問看～"
+        return {"response": response_text}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Gemini 執行出錯，錯誤訊息: {str(e)}")
+	    
 # 設定 Google Gemini AI API 金鑰
 genai.configure(api_key=os.environ["GOOGLE_API_KEY"])
 # 設定 Gemini 文字生成參數
