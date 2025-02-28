@@ -1044,7 +1044,66 @@ X: 以上沒有符合我的症狀種類"""
 
     # 使用 Line Bot API 回覆訊息
     line_bot_api.reply_message(event.reply_token, TextSendMessage(text=message))
-    
+    def main():
+    print("您好！我將為您推薦符合您症狀的藥用植物🌿")
+    print("""
+請選擇以下最符合您症狀的種類(A~E):
+A: 呼吸系統與感冒問題
+B: 消化與代謝問題
+C: 皮膚與過敏問題
+D: 循環與泌尿系統問題
+E: 身心與內分泌問題
+X: 以上沒有符合我的症狀種類
+""")
+
+    # 讓使用者選擇症狀分類
+    Symptom_input = input("請輸入(A/B/C/D/E/X): ").upper()
+    while Symptom_input not in valid_choices:
+        print("輸入錯誤，請重新輸入 A, B, C, D, E 或 X")
+        Symptom_input = input("請輸入您的選擇 (A/B/C/D/E/X): ").upper()
+
+    if Symptom_input == 'X':
+        print("請詳細描述您的症狀: ")
+        detailed_input = input()
+        try:
+            ai_response = model.generate_content(detailed_input)
+            print(ai_response.text if ai_response.text else "抱歉，我無法理解你的問題，請換個方式問問看～")
+        except Exception as e:
+            print(f"Gemini 執行出錯: {str(e)}")
+        return
+
+    # 根據使用者選擇的症狀分類進行處理
+    category = valid_choices[Symptom_input]
+    symptoms_check = ['沒有'] + Symptom_classification[category]
+    symptoms = ", ".join(Symptom_classification[category])
+    print(f"\n以下有符合您的症狀描述嗎? {symptoms}")
+
+    type_input = input("請輸入符合您的症狀: ")
+    while type_input not in symptoms_check:
+        print("輸入錯誤，請重新輸入")
+        type_input = input("請輸入上述符合您的症狀: ")
+
+    if type_input in ['沒有', '無']:
+        print("感謝您的使用，再見！")
+        return
+
+    # 根據具體症狀進行更詳細的選擇
+    print("\n請選擇以下符合您的症狀描述:")
+    des = []
+    for key, description in Symptom_questions.get(type_input, {}).items():
+        print(f"{key}: {description}")
+        des.append(key)
+
+    final_input = input(f"以上哪種症狀描述較符合您({', '.join(des)})? ").upper()
+    while final_input not in des:
+        print("輸入錯誤，請重新輸入")
+        final_input = input(f"以上哪種症狀描述較符合您({', '.join(des)})? ").upper()
+
+    result = f"{type_input}_{final_input}"
+    print("\n" + Symptom_answers[result])
+
+if __name__ == "__main__":
+    main()
 
  
 
