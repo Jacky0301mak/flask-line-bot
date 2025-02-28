@@ -35,6 +35,34 @@ line_handler = WebhookHandler(os.environ["CHANNEL_SECRET"])
 
 # 設定是否與使用者交談
 working_status = os.getenv("DEFALUT_TALKING", default="true").lower() == "true"	
+
+
+
+# 設定 CORS，允許跨域請求
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Line Webhook 路由
+@app.post("/webhook")
+async def webhook(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    x_line_signature=Header(None),
+):
+    body = await request.body()
+    try:
+        background_tasks.add_task(
+            line_handler.handle, body.decode("utf-8"), x_line_signature
+        )
+    except InvalidSignatureError:
+        raise HTTPException(status_code=400, detail="Invalid signature")
+    return "ok"
+
 def image(url):
   response = requests.get(url) # 下載圖片
 
@@ -1023,6 +1051,7 @@ image_url = {
 import google.generativeai as genai
 import json, os
 #from google.colab import userdata 
+
 
 @app.get("/")
 def main():
