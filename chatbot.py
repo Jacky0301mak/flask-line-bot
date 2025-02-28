@@ -1050,9 +1050,10 @@ user_status = {}
 def handle_message(event):
     user_id = event.source.user_id
     user_input = event.message.text.strip().upper()
-# 初始詢問
-if user_id not in user_status:
-    message = """您好
+
+    # 初始詢問
+    if user_id not in user_status:
+        message = """您好，
 我將推薦符合您症狀的藥用植物:
 請選擇以下最符合您症狀的種類(A~E):
 A: 呼吸系統與感冒問題
@@ -1061,11 +1062,10 @@ C: 皮膚與過敏問題
 D: 循環與泌尿系統問題
 E: 身心與內分泌問題
 X: 以上沒有符合我的症狀種類"""
-    return {"message": message}
-
+        
         user_status[user_id] = "waiting_for_category"
         line_bot_api.reply_message(event.reply_token, TextSendMessage(text=message))
-       
+        return
 
     # 讀取使用者的分類選擇
     if user_status[user_id] == "waiting_for_category":
@@ -1090,24 +1090,24 @@ X: 以上沒有符合我的症狀種類"""
         line_bot_api.reply_message(event.reply_token, TextSendMessage(text=response_text))
         del user_status[user_id]  # 清除狀態
         return
+
     # 取得對應的分類名稱
-    category = valid_choices[Symptom_input]
+    category = valid_choices.get(user_input, None)
+    if category:
+        symptoms_check = ['沒有'] + Symptom_classification[category]
 
-    # 你的 `Symptom_classification` 字典應該事先定義
-    symptoms_check = ['沒有'] + Symptom_classification[category]
+        # 顯示症狀選項
+        symptoms = ", ".join(Symptom_classification[category])
+        print(f"\n以下有符合您的症狀描述嗎? {symptoms}")
 
-    # 顯示症狀選項
-    symptoms = ", ".join(Symptom_classification[category])
-    print(f"\n以下有符合您的症狀描述嗎? {symptoms}")
-
-    # 讓使用者選擇症狀
-    type_input = input("請輸入符合您的症狀: ")
-    while type_input not in symptoms_check:
-        print("輸入錯誤，請重新輸入")
-        type_input = input("請輸入上述符合您的症狀: ")
+        # 讓使用者選擇症狀
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f"以下有符合您的症狀描述嗎? {symptoms}"))
+    else:
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(text="無效的選項，請選擇 A, B, C, D, E 或 X。"))
+        return
 
     # 如果使用者選擇「沒有」或「無」，則退出
-    if type_input in ['沒有', '無']:
+    if user_input in ['沒有', '無']:
         ai_response()
         return  # **停止函數執行**
 
@@ -1116,17 +1116,17 @@ X: 以上沒有符合我的症狀種類"""
                             '皮膚瘙癢', '過敏反應', '眼睛疲勞', '痰多', '心悸', '止血',
                             '貧血', '蚊蟲叮咬', '高血糖', '口渴', '疲勞', '尿道感染', '腎臟問題']
 
-    if type_input in direct_exit_symptoms:
-        print("\n"+single_choice[type_input])
-        image(image_url[single_choice[type_input]])
-        for i in response[single_choice[type_input]]:
-          print(i)
+    if user_input in direct_exit_symptoms:
+        print("\n" + single_choice.get(user_input, "沒有對應答案"))
+        image(image_url.get(single_choice.get(user_input), ""))
+        for i in response.get(single_choice.get(user_input), []):
+            print(i)
         return  # **停止函數執行**
 
     # 顯示症狀描述選項
     print("\n請選擇以下符合您的症狀描述:")
     des = []
-    for key, description in Symptom_questions[type_input].items():
+    for key, description in Symptom_questions.get(user_input, {}).items():
         print(f"{key}: {description}")
         des.append(key)
 
@@ -1137,16 +1137,15 @@ X: 以上沒有符合我的症狀種類"""
         final_input = input(f"以上哪種症狀描述較符合您({', '.join(des)})? ").upper()
 
     # 提供最終結果
-    result = f"{type_input}_{final_input}"
+    result = f"{user_input}_{final_input}"
 
-    print("\n"+Symptom_answers[result])
-    image(image_url[Symptom_answers[result]])
-    for i in response[Symptom_answers[result]]:
-      print(i)
+    print("\n" + Symptom_answers.get(result, "無法提供答案"))
+    image(image_url.get(Symptom_answers.get(result), ""))
+    for i in response.get(Symptom_answers.get(result), []):
+        print(i)
     return
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
-
   
 
