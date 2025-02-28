@@ -1053,7 +1053,7 @@ def handle_message(event):
 
     # 初始詢問
     if user_id not in user_status:
-        message = """您好,
+       return{  message = """您好,
 我將推薦符合您症狀的藥用植物
 請選擇以下最符合您症狀的種類(A~E):
 A: 呼吸系統與感冒問題
@@ -1061,11 +1061,11 @@ B: 消化與代謝問題
 C: 皮膚與過敏問題
 D: 循環與泌尿系統問題
 E: 身心與內分泌問題
-X: 以上沒有符合我的症狀種類"""
+X: 以上沒有符合我的症狀種類"""}
         
         user_status[user_id] = "waiting_for_category"
         line_bot_api.reply_message(event.reply_token, TextSendMessage(text=message))
-        return
+       
 
     # 讀取使用者的分類選擇
     if user_status[user_id] == "waiting_for_category":
