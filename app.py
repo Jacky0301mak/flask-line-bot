@@ -17,7 +17,7 @@ from linebot import LineBotApi
 
 # 載入 .env 變數
 load_dotenv()
-@app.route(url)
+
 def image(url):
   response = requests.get(url) # 下載圖片
 
