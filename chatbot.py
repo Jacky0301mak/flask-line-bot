@@ -1053,7 +1053,7 @@ def handle_message(event):
 # 初始詢問
 if user_id not in user_status:
     return {
-        "message": """您好，
+        "message": """您好,
 我將推薦符合您症狀的藥用植物:
 請選擇以下最符合您症狀的種類(A~E):
 A: 呼吸系統與感冒問題
