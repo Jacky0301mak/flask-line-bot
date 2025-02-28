@@ -7,4 +7,4 @@ gradio
 matplotlib
 dotenv
 requests
-google.colab
+
