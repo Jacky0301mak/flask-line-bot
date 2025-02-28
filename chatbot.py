@@ -991,7 +991,7 @@ image_url = {
 
 import google.generativeai as genai
 import json, os
-from google.colab import userdata
+#from google.colab import userdata 
 
 def main():
 # 讓使用者輸入選擇
